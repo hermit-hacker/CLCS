@@ -5,7 +5,7 @@
 //
 // Cryptolingus Cracking Suite (CLCS) version 1.1
 //
-// Modified: 2014-08-25
+// Modified: 2014-09-27
 // Unit: Courtroom
 // File: CourtroomAgent.php
 //
@@ -15,6 +15,12 @@
 
 include 'Resources/CLCommon/CLCS_Common.php';
 
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: runMenu
+// Inputs:  CLCSConfiguration $chConfig     (A CLCSConfiguration object that is passed to secondary function calls)
+// Returns: null
+// Description: Displays the control panel
 function runMenu($courthouseConfig) {
     $UserChoice = "I";
 
@@ -45,7 +51,6 @@ function runMenu($courthouseConfig) {
 				break;
 			case 'S':
 				$courthouseConfig->showAllSettings();
-				userAck();
 				break;
 			case 'V':
 				showCourthouseStatus($courthouseConfig);
@@ -58,7 +63,18 @@ function runMenu($courthouseConfig) {
 		}
     }
 }
+//
+// END runMenu
+////////////////////////////////////////////////////////////////////////////////////////////
 
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: buildJobs
+// Inputs:  CLCSConfiguration $chConfig
+// Returns: null
+// Description: Queries the database and builds individual tasks for
+//              PublicOpinion nodes to execute.
 function buildJobs($chConfig) {
 	echo "Building jobs from wordlists and targets... ";
 	$dbCon = connectTo($chConfig, "Courthouse", TRUE, FALSE);
@@ -103,8 +119,7 @@ function buildJobs($chConfig) {
 	foreach ($allTargetlists as $key=>$value) {
 		foreach ($allWordlists as $wl) {
 			$sqlBuildJobTable .= "( '" . $wl . "', '" . $value . "', '" . $key . "' ),";
-			//echo "Job: ". $wl . " for " . $value . " (type: " . $key . " )\n";
-		}
+        }
 	}
 	$sqlBuildJobTable = substr($sqlBuildJobTable, 0, -1) . ";";
 	$dbCon->query($sqlBuildJobTable);
@@ -112,13 +127,33 @@ function buildJobs($chConfig) {
 	echo "DONE";
 	sleep(2);
 }
+//
+// END buildJobs
+///////////////////////////////////////////////////////////////////////////////////////////
 
+    
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: initializeCourthouse
+// Inputs:  CLCSConfiguration $chConfig
+// Returns: null
+// Description: Wipes out the Courthouse database and all target/wordlist directories
 function initializeCourthouse($chConfig) {
 	resetCLCSdb("Courthouse", $chConfig);
 	wipeTWDirectories();
 	userAck();
 }
+//
+// END initializeCourthouse
+///////////////////////////////////////////////////////////////////////////////////////////
 
+    
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: showCourthouseStatus
+// Inputs:  CLCSConfiguration $chConfig
+// Returns: null
+// Description: Displays the number of words and targets present in the Courthouse
 function showCourthouseStatus($chConfig) {
 	$dbCon = connectTo($chConfig, "Courthouse", TRUE, FALSE);
 	$tempWordResults = $dbCon->query("SELECT COUNT(*) FROM Words");
@@ -143,7 +178,17 @@ function showCourthouseStatus($chConfig) {
 	echo "Targets: " . $targetCount . "\n";
 	userAck();
 }
+//
+// END showCourthouseStatus
+///////////////////////////////////////////////////////////////////////////////////////////
+    
 
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: wipeTWDirectories
+// Inputs:  null
+// Returns: null
+// Description: Wipes all content from the targets and wordlists directories
 function wipeTWDirectories() {
 	$scanFiles = preg_grep('/^([^.])/', scandir('Resources/w/'));
 	foreach ($scanFiles as $tgtFile) {
@@ -156,9 +201,17 @@ function wipeTWDirectories() {
 		unlink($fileName);
 	}
 }
-
-
-/////// Main program execution /////////
+//
+// END wipeTWDirectories
+///////////////////////////////////////////////////////////////////////////////////////////
+    
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                       //
+//                              Main program execution                                   //
+//                                                                                       //
+///////////////////////////////////////////////////////////////////////////////////////////
 $cfg_file = new CLCSConfiguration("Courthouse");
 runMenu($cfg_file);
 

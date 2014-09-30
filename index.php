@@ -3,7 +3,7 @@
 //
 // Cryptolingus Cracking Suite (CLCS) version 1.1
 //
-// Modified: 2014-08-25
+// Modified: 2014-09-27
 // Unit: Courtroom
 // File: index.php
 //
@@ -13,7 +13,13 @@
 
 include 'Resources/CLCommon/CLCS_Common.php';
 
-function assignJob($chConfig, $nodeID) {
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: assignJob
+// Inputs: CLCSConfiguration $chConfig  (A CLCSConfiguration object used to connect to the database)
+//         String $nid                  (The unique node identifier)
+// Returns: null
+// Description: Finds the next available job and assigns it to a requesting node
+function assignJob($chConfig, $nid) {
 	$dbCon = connectTo($chConfig, "Courthouse", TRUE, FALSE);
 	// Find an available job
 	$sqlNextJob = "SELECT `job_id`,`word_file`,`hash_file`,`hashtype_id` FROM `Jobs` WHERE `node_id` IS NULL AND `complete`=FALSE LIMIT 1;";
@@ -25,7 +31,7 @@ function assignJob($chConfig, $nodeID) {
 		$jobHashfile = $jobResults[2];
 		$hType = $jobResults[3];
 		// Capture the job in the Jobs table
-		$sqlGrabJob = "UPDATE `Jobs` SET `node_id`='" . $nodeID . "' WHERE `job_id`='" . $jobID . "';";
+		$sqlGrabJob = "UPDATE `Jobs` SET `node_id`='" . $nid . "' WHERE `job_id`='" . $jobID . "';";
 		$dbCon->query($sqlGrabJob);
 		//Find the John CLI type... no Hashcat right now, sorry people
 		$sqlJohnCLI = "SELECT Johntype.cl_type FROM Johntype INNER JOIN Hashtype ON Johntype.id = Hashtype.johntype_id WHERE Hashtype.id = '" . $hType . "';";
@@ -33,13 +39,25 @@ function assignJob($chConfig, $nodeID) {
 		$taskDetailResults = $tempTaskDetailResults->fetch_row();
 		$johnType = $taskDetailResults[0];
 		// Update the _TASK table to contain the required information
-		$sqlSetTask = "INSERT INTO `" . $nodeID . "_TASKS` (`command`, `target`, `words`, `job_id`) VALUES ('john --format=" . $johnType . "', '" . $jobWordfile . "', '" . $jobHashfile . "', '" . $jobID . "' );";
+		$sqlSetTask = "INSERT INTO `" . $nid . "_TASKS` (`command`, `target`, `words`, `job_id`) VALUES ('john --format=" . $johnType . "', '" . $jobWordfile . "', '" . $jobHashfile . "', '" . $jobID . "' );";
 		$dbCon->query($sqlSetTask);
 	}
 	// Close the database
 	$dbCon->close();
 }
+//
+// END assignJob
+////////////////////////////////////////////////////////////////////////////////////////////
 
+    
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: createuserAndTable
+// Inputs: CLCSConfiguration $chConfig  (A CLCSConfiguration object used to connect to the database)
+//         String $nodeID               (The unique node identifier)
+//         String $otp                  (The password used to identify the unique node to the database server)
+// Returns: null
+// Description: Process a new registration and build/grant access to the node-specific _TASKS and _RESULTS tables
 function createUserAndTable($chConfig, $nodeID, $otp) {
 	// Build a new set of tables and grant the user permissions to those tables
 	$sqlAddTable = "CREATE TABLE Courthouse." . $nodeID . "_TASKS (`task` INT UNSIGNED NOT NULL AUTO_INCREMENT, `command` VARCHAR(255), `target` VARCHAR(255), `words` VARCHAR(255), `job_id` INT UNSIGNED NOT NULL, `complete` BOOL NOT NULL DEFAULT 0, PRIMARY KEY (`task`)) ENGINE=MyISAM DEFAULT CHARSET=latin1;";
@@ -52,7 +70,19 @@ function createUserAndTable($chConfig, $nodeID, $otp) {
 	$addResult = $dbCon->multi_query($sqlAddTable);
 	$dbCon->close();
 }
+//
+// END createUserAndTables
+////////////////////////////////////////////////////////////////////////////////////////////
 
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: markJobComplete
+// Inputs: CLCSConfiguration $chConfig  (A CLCSConfiguration object used to connect to the database)
+//         String $nodeID               (The unique node identifier)
+//         String $jobID                (The job ID to mark complete)
+// Returns: null
+// Description: Performs closeout when a node says it has completed a job)
 function markJobComplete($chConfig, $nodeID, $jobID) {
 	$sqlFinishJob = "UPDATE `Jobs` SET `complete`=TRUE WHERE `job_id`='" . $jobID . "';";
 	$sqlFinishTask = "UPDATE `" . $nodeID . "_TASKS` SET `complete`=TRUE WHERE `job_id`='" . $jobID . "';";
@@ -61,7 +91,20 @@ function markJobComplete($chConfig, $nodeID, $jobID) {
 	$dbCon->query($sqlFinishTask);
 	$dbCon->close();
 }
+//
+// END markJobComplete
+////////////////////////////////////////////////////////////////////////////////////////////
 
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: processResult
+// Inputs: CLCSConfiguration $chConfig  (A CLCSConfiguration object used to connect to the database)
+//         String $nodeID               (The unique node identifier)
+//         String $jobID                (The job ID to process the results of)
+//         String $results              (The reported results of the job)
+// Returns: null
+// Description: Process results from the provided results data
 function processResult($chConfig, $nodeID, $jobID, $results) {
 	// Flag the job as complete
 	markJobComplete($chConfig, $nodeID, $jobID);
@@ -80,7 +123,20 @@ function processResult($chConfig, $nodeID, $jobID, $results) {
 		$dbCon->close();
 	}
 }
+//
+// END processResult
+////////////////////////////////////////////////////////////////////////////////////////////
 
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: registerNode
+// Inputs: CLCSConfiguration $chConfig  (A CLCSConfiguration object used to connect to the database)
+//         String $nodeID               (The unique node identifier)
+//         Int $gpu                     (The number of GPU cores available)
+//         String $ipa                  (The IP address of the node)
+// Returns: null
+// Description: Register a new node
 function registerNode($chConfig, $nodeID, $gpu, $ipa) {
 	$onetimePass = getPassword();
 	createUserAndTable($chConfig, $nodeID, $onetimePass); 
@@ -96,10 +152,22 @@ function registerNode($chConfig, $nodeID, $gpu, $ipa) {
 	$dbCon->close();
 	assignJob($chConfig, $nodeID);
 }
+//
+// END registerNode
+////////////////////////////////////////////////////////////////////////////////////////////
 
+
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                       //
+//                              Main program execution                                   //
+//                                                                                       //
+///////////////////////////////////////////////////////////////////////////////////////////
+
+// Establish a new CLCSConfiguration object
 $cfg_file = new CLCSConfiguration("Courthouse");
 
-
+// Check for a specified action, build out parameters, and execute
 if( $_POST["CLCSA"] ) {
 	$clcsAction = $_POST["CLCSA"];
 	$clcsNodeID = $_POST["NodeID"];

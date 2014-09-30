@@ -3,7 +3,7 @@
 //
 // Cryptolingus Cracking Suite (CLCS) version 1.1
 //
-// Modified: 2014-08-22
+// Modified: 2014-09-27
 // Unit: Core
 // File: CLCS_Common.php
 //
@@ -11,42 +11,89 @@
 //
 ////////////
 
-/// Class definition
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: CLASS_DEF CLCSConfiguration
+// Inputs:  String $dbType
+// Returns: null
+// Description: Builds a CLCSConfiguraiton object
 class CLCSConfiguration
 {
+    // Sections is list of sections,  settings is just settings, and filename is the locaiton of the config files
 	private $sections = array();
 	private $settings = array();
 	private $filename = "default.ini";
 
+    
+    
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // Function name: CLCSConfiguration->{default constructor}
+    // Inputs:  String $dbType
+    // Returns: null
+    // Description: Builds a new CLCSConfiguration object by reading in a configuration file
 	function __construct($dbType) {
 		$this->filename = "Config/" . $dbType . ".ini";
 		$this->readConfigFile($this->filename);
 	}
-
+    //
+    // END CLCSConfiguration->{default constructor}
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    
+	
+    
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // Function name: CLCSConfiguration->getSetting
+    // Inputs:  String $cfgsection (the section to retrieve a setting from)
+    //          String $cfgsetting (the actual setting key to retrieve)
+    // Returns: String containing the specified value for the requested section/key
+    // Description: Get the setting for a specified key in a specified section
+	public function getSetting($cfgsection, $cfgsetting) {
+		return $this->settings[$cfgsection][$cfgsetting];
+	}
+    //
+    // END CLCSConfiguration->getSetting
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    
+	
+    
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // Function name: CLCSConfiguration->readConfigFile
+    // Inputs:  String $theFile (file to be read in)
+    // Returns: null
+    // Description: Takes a specified PHP INI format file and reads it into a CLCSConfiguration object, enumerating sections as it goes
 	private function readConfigFile($theFile) {
 		$this->settings = parse_ini_file($theFile, TRUE) or die("Could not open config file: " . $theFile . "\n");
 		foreach ($this->settings as $section => $setting) {
 			$this->sections[] = $section;
 		}
 	}
-	
-	public function showSections() {
-		echo "Listing sections:\n";
-		echo "-----------------\n";
-		foreach ($this->sections as $section) {
-			echo $section . "\n";
-		}
-	}
-	
-	public function getSetting($cfgsection, $cfgsetting) {
-		return $this->settings[$cfgsection][$cfgsetting];
-	}
-	
+    //
+    // END CLCSConfiguration->readConfigFile
+    ///////////////////////////////////////////////////////////////////////////////////////////
+
+    
+    
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // Function name: CLCSConfiguration->setValue
+    // Inputs:  String $cfgsection    (the section to set the key/value in)
+    //          String $cfgsetting    (the setting key to be set)
+    //          String $settingValue  (the value to be set for the specified key)
+    // Returns: null
+    // Description: Sets a specified key in a specified section to a specified value
 	public function setValue($cfgsection, $cfgsetting, $settingValue) {
 		$this->settings[$cfgsection][$cfgsetting] = $settingValue;
 	}
-	
-	public function showAllSettings() {
+    //
+    // END CLCSConfiguration->setValue
+    ///////////////////////////////////////////////////////////////////////////////////////////
+
+    
+    
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // Function name: CLCSConfiguration->showAllSettings
+    // Inputs:  null
+    // Returns: null
+    // Description: Prints all settings to the console
+    public function showAllSettings() {
 		foreach ($this->settings as $section => $setting) {
 			echo $section . "\n";
 			echo "-----------------------\n";
@@ -54,8 +101,37 @@ class CLCSConfiguration
 				echo "   " . $key . " : " . $value . "\n";
 			}
 		}
+        userAck();
 	}
+    //
+    // END CLCSConfiguration->showAllSettings
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    
+    
+    
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // Function name: CLCSConfiguration->showSections
+    // Inputs:  null
+    // Returns: null
+    // Description: Prints a list of all sections to the console
+	public function showSections() {
+		echo "Listing sections:\n";
+		echo "-----------------\n";
+		foreach ($this->sections as $section) {
+			echo $section . "\n";
+		}
+	}
+    //
+    // END CLCSConfiguration->showSections
+    ///////////////////////////////////////////////////////////////////////////////////////////
+
 	
+    
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // Function name: CLCSConfiguration->writeConfigurationFile
+    // Inputs:  String $theFile (Specifies the configuration file to be written)
+    // Returns: null
+    // Description: Writes the CLCSConfiguration object out to a file
 	public function writeConfigFile($theFile) {
 		$fh = fopen($theFile, 'w');
 		$newData = "";
@@ -67,11 +143,28 @@ class CLCSConfiguration
 		}
 		fwrite($fh, $newData);
 		fclose($fh);
-	}	
+	}
+    //
+    // END CLCSConfiguration->writeConfigFile
+    ///////////////////////////////////////////////////////////////////////////////////////////
 }
+//
+// END CLASS_DEF CLCSConfiguration
+///////////////////////////////////////////////////////////////////////////////////////////
 
-//////////////// Generic Functions /////////////////////
 
+///////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                       //
+//                                      Generic Functions                                //
+//                                                                                       //
+///////////////////////////////////////////////////////////////////////////////////////////
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: clearScreen
+// Inputs: null
+// Returns: null
+// Description: Creates an OS independent clear screen by outputting 80 blank lines
 function clearScreen() {
 	$looper = 1;
 	while ($looper < 80) {
@@ -79,7 +172,22 @@ function clearScreen() {
 		$looper += 1;
 	}
 }
+//
+// END clearScreen
+///////////////////////////////////////////////////////////////////////////////////////////
 
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: connectManual
+// Inputs: String $dbHost       (The database server to connect to)
+//         String $dbUser       (The username to connect as)
+//         String $dbPort       (The port for the database to connect to)
+//         String $dbPass       (The password to use)
+//         String $theDB        (The name of the database in the database server)
+//         Bool   $showErrors   (If true, show detailed error information, otherwise only show overall status)
+// Returns: A mysqli connection object
+// Description: Allows for manual specification of all parameters to establish a database connection
 function connectManual($dbHost, $dbUser, $dbPort, $dbPass, $theDB, $showErrors) {
 	$dbConnector = new mysqli($dbHost, $dbUser, $dbPass, $theDB, $dbPort);
 	if ($dbConnector->connect_errno) {
@@ -95,7 +203,20 @@ function connectManual($dbHost, $dbUser, $dbPort, $dbPass, $theDB, $showErrors) 
 	}
 	return $dbConnector;
 }
+//
+// END connectManual
+///////////////////////////////////////////////////////////////////////////////////////////
 
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: connectTo
+// Inputs: CLCSConfiguration $configFile    (A CLCSConfiguration object that contains all the database connector information)
+//         String $dbType                   (The database type, used to pull the appropriate configuration items from the CLCSConfiguration object)
+//         Bool $useDB                      (If ture, switch into the database, otherwise don't select one; allows for explicit versus implicit references)
+//         Bool $showErrors                 (If true, show detailed error information, otherwise only show overall status)
+// Returns: A mysqli connection object
+// Description: Uses a CLCSConfiguration object to retrieve connection options, then connects to a database
 function connectTo($configFile, $dbType, $useDB, $showErrors) {
 	$dbHost = $configFile->getSetting($dbType, "DBAddress");
 	$dbUser = $configFile->getSetting($dbType, "DBUser");
@@ -120,7 +241,18 @@ function connectTo($configFile, $dbType, $useDB, $showErrors) {
         }
 	return $dbConnector;
 }
+//
+// END connectTo
+///////////////////////////////////////////////////////////////////////////////////////////
 
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: downloadFile
+// Inputs: String $url              (The full URL to the file to download)
+//         String $targetDirectory  (The directory in which to store the downloaded file)
+// Returns: null
+// Description: Downloads a specified file to a specified directory
 function downloadFile($url, $targetDirectory) {
         $options = array(
                 'http' => array(
@@ -132,7 +264,18 @@ function downloadFile($url, $targetDirectory) {
         $fileData = file_get_contents($url, false, $context);
 	writeFile($targetDirectory, $fileData);
 }
-
+//
+// END downloadFile
+///////////////////////////////////////////////////////////////////////////////////////////
+    
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: generateCrypto
+// Inputs: String $type         (Specifies host or client crypto)
+//         String $filename     (The base filename to use when generating crypto keys)
+// Returns: null
+// Description: Generates RSA 4096 cryptographic keys
 function generateCrypto($type, $filename) {
 	echo "Generating new crypto...\n";
 	// Remove any old key material
@@ -151,18 +294,49 @@ function generateCrypto($type, $filename) {
 		}
 	}
 }
-
+//
+// END generateCrypto
+///////////////////////////////////////////////////////////////////////////////////////////
+    
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: getOwnIPAddress
+// Inputs: null
+// Returns: String containing the calling system's IP address
+// Description: Calls OpenDNS to find the calling system's IP address
 function getOwnIPAddress()
 {
 	exec("dig +short myip.opendns.com @resolver1.opendns.com", $myIP);
 	return $myIP[0];
 }
+//
+// END getOwnIPAddress
+///////////////////////////////////////////////////////////////////////////////////////////
 
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: getPassword
+// Inputs: Int $length (Optional variable, defaults to 15, length of the password to get)
+// Returns: A random password of the specified length (maximum 32, default 15)
+// Description: Generates a random password by taking the MD5 of a random value
 function getPassword($length=15) {
 	$quickSet = substr(md5(rand()), 0, $length);
 	return $quickSet;
 }
-
+//
+// END getPassword
+///////////////////////////////////////////////////////////////////////////////////////////
+ 
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: getUserInput
+// Inputs: String $prompt   (The string to provide the user as a prompt)
+//         Bool $makeUpper  (If true, return the uppercase of the user input, defaults to return exact input)
+// Returns: A string containing the user response
+// Description: Displays the specified prompt to a user on the console, gets the response, and returns it
 function getUserInput($prompt, $makeUpper=FALSE) {
 	echo "$prompt ";
 	if ($makeUpper) {
@@ -171,7 +345,17 @@ function getUserInput($prompt, $makeUpper=FALSE) {
 		return readline();
 	}
 }
+//
+// END getUserInput
+///////////////////////////////////////////////////////////////////////////////////////////
 
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: getValidFile
+// Inputs: null
+// Returns: String containing a filename validated to exist
+// Description: Prompts a user for a valid file, confirms its existence, and then passes the result back
 function getValidFile() {
 	$someFile = NULL;
 	while (!file_exists($someFile)) {
@@ -183,7 +367,19 @@ function getValidFile() {
 	};
 	return $someFile;
 }
+//
+// END getValidFile
+///////////////////////////////////////////////////////////////////////////////////////////
 
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: loadSQLFile
+// Inputs: String $dbType               (The database type that should be loaded)
+//         CLCSConfiguration $dbConfig  (A CLCSConfiguration object used to establish a database connection)
+//         String $sqlFile              (A SQL file to be loaded into the specified database)
+// Returns: null
+// Description: Loads a SQL file into a database
 function loadSQLFile($dbType, $dbConfig, $sqlFile) {
 	$dbCon = connectTo($dbConfig, $dbType, FALSE, TRUE);
 	$sqlCommands = file_get_contents($sqlFile);
@@ -203,7 +399,19 @@ function loadSQLFile($dbType, $dbConfig, $sqlFile) {
 	}
 	$dbCon->close();
 }
+//
+// END loadSQLFile
+///////////////////////////////////////////////////////////////////////////////////////////
 
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: loadTargets
+// Inputs: Bool $processDirectory       (If true, process all the target files found in the specified directory from the configuration)
+//         String $dbType               (The name of the database to connect to)
+//         CLCSConfiguration $dbConfig  (A CLCSConfiguration object used to connect to the database server)
+// Returns: null
+// Description:
 function loadTargets($processDirectory, $dbType, $dbConfig) {
 	$dbCon = connectTo($dbConfig, $dbType, FALSE, TRUE);
 	$dbTdir = $dbConfig->getSetting($dbType, "TargetsDirectory");
@@ -272,7 +480,19 @@ function loadTargets($processDirectory, $dbType, $dbConfig) {
 	$dbCon->close();
 	echo "INFO: Closed connection.\n";
 }
+//
+// END loadTargets
+///////////////////////////////////////////////////////////////////////////////////////////
 
+    
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: loadWordlist
+// Inputs: Bool $processDirectory       (If true, process all the wordlist files found in the specified directory from the configuration)
+//         String $dbType               (The name of the database to connect to)
+//         CLCSConfiguration $dbConfig  (A CLCSConfiguration object used to connect to the database server)
+// Returns: null
+// Description: Loads wordlists into the database
 function loadWordlist($processDirectory, $dbType, $dbConfig) {
 	$dbCon = connectTo($dbConfig, $dbType, FALSE, TRUE);
 	$dbWdir = $dbConfig->getSetting($dbType, "WordlistDirectory");
@@ -315,14 +535,34 @@ function loadWordlist($processDirectory, $dbType, $dbConfig) {
 	$dbCon->close();
 	echo "INFO: Closed connection.\n";
 }
+//
+// END loadWordlist
+///////////////////////////////////////////////////////////////////////////////////////////
 
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: printHTMLFooter
+// Inputs: null
+// Returns: null
+// Description: Prints a standard table encapsulating footer
 function printHTMLFooter() {
 	echo "</td></tr>\n";
 	echo "<tr><td width=\"100%\"><center>Cryptolingus Cracking Suite (CLCS)</center></td></tr></table>\n";
 	echo "</body>\n";
 	echo "</html>\n";
 }
+//
+// END printHTMLFooter
+///////////////////////////////////////////////////////////////////////////////////////////
 
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: printHTMLHeader
+// Inputs: null
+// Returns: null
+// Description: Prints a standard table encapsulating header
 function printHTMLHeader($siteType) {
 	echo "<html>\n";
 	echo "<head><title>CLCS - " . $siteType . "</title></head>\n";
@@ -331,7 +571,18 @@ function printHTMLHeader($siteType) {
 	echo "<tr><td width=\"100%\"><center><font face=\"Lucida Console, Monaco, monospace\" size=\"+4\"><u>Cryptolingus Cracking Suite</u></font></center></td></tr>\n";
 	echo "<tr with=\"100%\" height=\"100%\"><td>";
 }
+//
+// END printHTMLHeader
+///////////////////////////////////////////////////////////////////////////////////////////
 
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: resetCLCSdb
+// Inputs: String $dbType               (The database type to reset)
+//         CLCSConfiguration $dbConfig  (A CLCSConfiguration object used to connect to the database)
+// Returns: null
+// Description:
 function resetCLCSdb($dbType, $dbConfig) {
 	$dbCon = connectTo($dbConfig, $dbType, FALSE, TRUE);
 	$configFile = "Config/" . $dbType . ".sql";
@@ -340,7 +591,17 @@ function resetCLCSdb($dbType, $dbConfig) {
 	$dbCon->close();
 	loadSQLFile($dbType, $dbConfig, $configFile);
 }
+//
+// END resetCLCSdb
+///////////////////////////////////////////////////////////////////////////////////////////
 
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: showError
+// Inputs: String $error    (The text to be displayed)
+// Returns: null
+// Description: Shows a standard formatted error message.
 function showError($error="") {
 	if (!defined($error)) {
 		$error = "ERROR: Invalid input selected.  Please try again.\n";
@@ -348,14 +609,40 @@ function showError($error="") {
 	echo "ERROR: $error\n";
 	sleep(1);
 }
+//
+// END showError
+///////////////////////////////////////////////////////////////////////////////////////////
 
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: userAck
+// Inputs: null
+// Returns: null
+// Description: Displays a standard "Press ENTER to continue" message
 function userAck() {
 	echo "Press ENTER to continue...\n";
 	fgetc(STDIN);
 }
+//
+// END userAck
+///////////////////////////////////////////////////////////////////////////////////////////
 
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: writeFile
+// Inputs: String $theFile  (The file to be written to)
+//         String $theData  (The data to write to the file)
+// Returns: null
+// Description: Writes data to a specified file
 function writeFile($theFile, $theData) {
 	$fh = fopen($theFile, 'w');
 	fwrite($fh, $theData);
 	fclose($fh);
 }
+//
+// END
+///////////////////////////////////////////////////////////////////////////////////////////
+
+?>

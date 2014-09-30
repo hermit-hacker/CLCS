@@ -3,7 +3,7 @@
 //
 // Cryptolingus Cracking Suite (CLCS) version 1.1
 //
-// Modified: 2014-08-22
+// Modified: 2014-09-27
 // Unit: Justice
 // File: JusticeMenu.php
 //
@@ -13,6 +13,12 @@
 
 include 'Resources/CLCommon/CLCS_Common.php';
 
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: runMenu
+// Inputs:  CLCSConfiguration $justiceConfig
+// Returns: null
+// Description: Displays the control panel
 function runMenu($justiceConfig) {
 	$UserChoice = "I";
 	$TgtCH = "localhost";
@@ -87,8 +93,16 @@ function runMenu($justiceConfig) {
 		}
     }
 }
+//
+// END runMenu
+///////////////////////////////////////////////////////////////////////////////////////////
 
-// Add a Courthouse to be controlled by this Justice
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: addCourthouse
+// Inputs:  CLCSConfiguration $jConfig  (A CLCSConfiguration object to allow connections to the database)
+// Returns: null
+// Description: Add a courthouse to be controlled by this Justice unit
 function addCourthouse($jConfig) {
 	$chAddress = getUserInput("New address (FQDN or IP address):");
 	$chPort = getUserInput("Port:");
@@ -101,22 +115,49 @@ function addCourthouse($jConfig) {
 	}
 	userAck();
 }
+//
+// END addCourthouse
+///////////////////////////////////////////////////////////////////////////////////////////
 
-// Stub to select a Courthouse
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: chooseCourthouse
+// Inputs:  null
+// Returns: String containing the user Courthouse selection
+// Description: STUB Select a courthouse
 function chooseCourthouse() {
 	$newCH = getUserInput("What Courthouse would you like to interface with?");
 	return $newCH;
 }
+//
+// END chooseCourthouse
+///////////////////////////////////////////////////////////////////////////////////////////
 
-// Generate new crypto for Justice
+    
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: configureCLCS
+// Inputs:  null
+// Returns: null
+// Description: Generate new crypto for Justice
 function configureCLCS() {
 	if (getUserInput("Generate new key material? ") == "Y") {
 		generateCrypto("host", "justice");
 	}
 	sleep(2);
 }
+//
+// END configureCLCS
+///////////////////////////////////////////////////////////////////////////////////////////
 
-// Reset the database, read in wordlists and targets (if so desired)
+    
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: initializeJustice
+// Inputs:  CLCSConfiguration $jConfig  (A CLCSConfiguration object containing the database connection information)
+// Returns: null
+// Description: Reset the database, read in wordlists and targets (if so desired)
 function initializeJustice($jConfig) {
         resetCLCSdb("Justice", $jConfig);
         $processTargetsDirectory = getUserInput("Process the targets directory to load targets [Y/N]?", TRUE);
@@ -129,8 +170,17 @@ function initializeJustice($jConfig) {
         }
         userAck();
 }
+//
+// END initializeJustice
+///////////////////////////////////////////////////////////////////////////////////////////
 
-// Show status of cracking efforts
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: showJusticeStatus
+// Inputs:  CLCSConfiguration $jConfig  (A CLCSConfiguration object containing the database connection information)
+// Returns: null
+// Description: Show status of cracking efforts
 function showJusticeStatus($jConfig) {
         $dbCon = connectTo($jConfig, "Justice", TRUE, FALSE);
         $tempSolvedResult = $dbCon->query("SELECT COUNT(*) FROM Justice.Targets WHERE `isbenchmark`=false AND `cleartext_value` IS NOT NULL");
@@ -155,17 +205,35 @@ function showJusticeStatus($jConfig) {
                 $resPercent = 100 * ( floatval($resSolved) / floatval($resTotal) );
                 echo "There are currently $resSolved / $resTotal ($resPercent %) cracked.\n";
         }
-	$dbCon->close();
+        $dbCon->close();
         userAck();
 }
+//
+// END showJusticeStatus
+///////////////////////////////////////////////////////////////////////////////////////////
 
-// Stop a courthouse
-function stopCourthouse($TgtCourthouse) {
-	echo "Stopping Courthouse: $TgtCourthouse\n";
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: stopCourthouse
+// Inputs:  String $tgtCourthouse   (The courthouse to be stopped)
+// Returns: null
+// Description: STUB Stop a courthouse
+function stopCourthouse($tgtCourthouse) {
+	echo "Stopping Courthouse: $tgtCourthouse\n";
 	sleep(2);
 }
+//
+// END stopCourthouse
+///////////////////////////////////////////////////////////////////////////////////////////
 
-// Push wordlists and targets to all Courthouses
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: updateAllCourthouses
+// Inputs:  CLCSConfiguration $jConfig  (A CLCSConfiguration object containing the database connection information)
+// Returns: null
+// Description: Push wordlists and targets to all Courthouses
 function updateAllCourthouses($jconfig) {
 	$dbCon = connectTo($jconfig, "Justice", TRUE, FALSE);
 	$sqlAllCourthouses = "SELECT `address`,`port`,`username`,`userpass` FROM Courthouses;";
@@ -215,8 +283,17 @@ function updateAllCourthouses($jconfig) {
 	$dbCon->close();
 	userAck();
 }
+//
+// END updateAllCourthouses
+///////////////////////////////////////////////////////////////////////////////////////////
+    
 
-// Pull results back form all Courthouses
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: updateFromCourthouses
+// Inputs:  CLCSConfiguration $jConfig  (A CLCSConfiguration object containing the database connection information)
+// Returns: null
+// Description: Pull results back form all Courthouses
 function updateFromCourthouses($jConfig) {
 	$dbCon = connectTo($jConfig, "Justice", TRUE, FALSE);
 	$sqlAllCourthouses="SELECT `address`,`port`,`username`,`userpass` FROM Courthouses;";
@@ -252,8 +329,17 @@ function updateFromCourthouses($jConfig) {
 	}
 	sleep(1);
 }
+//
+// END updateFromCourthouses
+///////////////////////////////////////////////////////////////////////////////////////////
 
-/////// Main program execution /////////
+    
+    
+///////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                       //
+//                              Main program execution                                   //
+//                                                                                       //
+///////////////////////////////////////////////////////////////////////////////////////////
 $cfg_file = new CLCSConfiguration("Justice");
 runMenu($cfg_file);
 
