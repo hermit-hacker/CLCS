@@ -3,7 +3,7 @@
 //
 // Cryptolingus Cracking Suite (CLCS) version 1.1
 //
-// Modified: 2014-09-27
+// Modified: 2014-10-09
 // Unit: Core
 // File: CLCS_Common.php
 //
@@ -250,10 +250,10 @@ function connectTo($configFile, $dbType, $useDB, $showErrors) {
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Function name: downloadFile
 // Inputs: String $url              (The full URL to the file to download)
-//         String $targetDirectory  (The directory in which to store the downloaded file)
+//         String $targetFile       (The full path - including file name - where the result should be saved)
 // Returns: null
 // Description: Downloads a specified file to a specified directory
-function downloadFile($url, $targetDirectory) {
+function downloadFile($url, $targetFile) {
         $options = array(
                 'http' => array(
                         'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
@@ -262,7 +262,7 @@ function downloadFile($url, $targetDirectory) {
         );
         $context  = stream_context_create($options);
         $fileData = file_get_contents($url, false, $context);
-	writeFile($targetDirectory, $fileData);
+        writeFile($targetFile, $fileData);
 }
 //
 // END downloadFile
@@ -272,27 +272,43 @@ function downloadFile($url, $targetDirectory) {
     
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Function name: generateCrypto
-// Inputs: String $type         (Specifies host or client crypto)
-//         String $filename     (The base filename to use when generating crypto keys)
+// Inputs: String $filename     (The base filename to use when generating crypto keys)
 // Returns: null
 // Description: Generates RSA 4096 cryptographic keys
-function generateCrypto($type, $filename) {
+//              - Credit to John Snyder (Seoci) for the updated code here
+function generateCrypto($filename) {
 	echo "Generating new crypto...\n";
+
 	// Remove any old key material
-	system("rm -f ./Config/$filename");
-	system("rm -f ./Config/$filename.pub");
-	// Generate new key material
-	if ($type == "host") {
-		system("ssh-keygen -q -t rsa -b 4096 -f ./$filename -h -N '' ");
-		if (!file_exists("./Config/$filename") || !file_exists("./Config/$filename.pub")) {
-			die("ERROR: Failed to create key material\n");
-		}	
-	} else {
-		system("ssh-keygen -q -t rsa -b 4096 -f ./$filename -N '' ");
-		if (!file_exists("./Config/$filename") || !file_exists("./Config/$filename.pub")) {
-			die("ERROR: Failed to create key material\n");
-		}
+	$prvFile = "./Config/" . $filename;
+    $pubFile = "./Config/" . $filename . ".pub";
+    if (is_readable($prvFile)) {
+		unlink($prvFile);
 	}
+	if (is_readable($pubFile)) {
+		unlink($pubFile);
+	}
+
+	// Set options for the key material generation
+	$keymatOptions = array (
+		“private_key_bits” => 4096,
+		"private_key_type" => OPENSSL_KEYTYPE_RSA,
+	);
+	// Create a new key pair
+	$rsaKey = openssl_pkey_new($keymatOptions);
+	// Retrieve the public key to $pem variable
+	$privKey = openssl_pkey_get_private($rsaKey);
+	openssl_pkey_export($privKey, $privateKey);
+	// Retrieve the public key
+	$publicKey = sshEncodePublicKey($rsaKey);
+
+	// Export the files
+	writeFile($prvFile, $privateKey);
+	writeFile($pubFile, $publicKey);
+
+	if (!file_exists("./Config/$filename") || !file_exists("./Config/$filename.pub")) {
+        	die("ERROR: Failed to create key material\n");
+    }
 }
 //
 // END generateCrypto
@@ -613,7 +629,47 @@ function showError($error="") {
 // END showError
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-    
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: sshEncodePublicKey
+// Inputs: OpenSSL_pkey $rsaKey    (An OpenSSL pkey object)
+// Returns: A string containing the SSH encoded public key of the pkey object
+// Description: Shows a standard formatted error message.
+//              - Credit to John Snyder (Seoci) for the updated code here
+function sshEncodePublicKey($rsaKey) {
+    $keyInfo = openssl_pkey_get_details($rsaKey);
+    $buffer  = pack("N", 7) . "ssh-rsa" .
+        sshEncodeBuffer($keyInfo['rsa']['e']) .
+        sshEncodeBuffer($keyInfo['rsa']['n']);
+    return "ssh-rsa " . base64_encode($buffer);
+}
+//
+// END sshEncodePublicKey
+///////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// Function name: sshEncodeBuffer
+// Inputs: String $buffer    (The text to be packed in SSH format)
+// Returns: Binary encoded variant of $buffer, appropriately padded
+// Description: Encodes the specified buffer after appropriately padding it
+//              - Credit to John Snyder (Seoci) for the updated code here
+function sshEncodeBuffer($buffer) {
+    $len = strlen($buffer);
+    // If RSA key n/e values and’ed with 0x80 then pad with a null
+    if (ord($buffer[0]) & 0x80) {
+        $len++;
+        $buffer = "\x00" . $buffer;
+    }
+    return pack("Na*", $len, $buffer);
+}
+//
+// END sshEncodeBuffer
+///////////////////////////////////////////////////////////////////////////////////////////
+
+
     
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Function name: userAck
